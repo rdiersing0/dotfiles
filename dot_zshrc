@@ -145,3 +145,4 @@ export FZF_CTRL_T_OPTS="--preview 'bat -n --color=always --line-range :500 {}'"
 export FZF_ALT_C_COMMAND='fd --type d --hidden --follow --exclude .git'
 export FZF_ALT_C_OPTS="--preview 'tree -C {} | head -200'"
 # <<< cli-tools-setup <<<
+# syncdot end-to-end test 1781899402
