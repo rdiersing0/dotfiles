@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+# Claude Code PostToolUse hook: if the file just edited is a chezmoi-managed
+# dotfile, sync it to GitHub via `syncdot`. Reads the tool-call JSON on stdin.
+# Always exits 0 so it never blocks Claude's edit.
+set -uo pipefail
+
+input=$(cat 2>/dev/null || true)
+file=$(printf '%s' "$input" | jq -r '.tool_input.file_path // empty' 2>/dev/null || true)
+[ -z "$file" ] && exit 0
+
+CHEZMOI="$HOME/.local/bin/chezmoi"
+[ -x "$CHEZMOI" ] || CHEZMOI="chezmoi"
+
+# Normalize to an absolute path.
+case "$file" in
+  /*) abs="$file" ;;
+  *)  abs="$PWD/$file" ;;
+esac
+
+# Only sync if this path is actually managed by chezmoi (a real dotfile),
+# not just any file Claude happens to edit.
+if "$CHEZMOI" managed --path-style=absolute 2>/dev/null | grep -qxF "$abs"; then
+  "$HOME/.local/bin/syncdot" "chezmoi: auto-sync $(basename "$file") (edited by Claude Code)" \
+    >/dev/null 2>&1 || true
+fi
+exit 0

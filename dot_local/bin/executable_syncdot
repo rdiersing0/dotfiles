@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# syncdot — capture local edits to chezmoi-managed dotfiles and push to GitHub.
+# Usage: syncdot ["optional commit message"]
+set -uo pipefail
+
+CHEZMOI="$HOME/.local/bin/chezmoi"
+[ -x "$CHEZMOI" ] || CHEZMOI="chezmoi"
+
+# Pull any edits to already-managed files back into the source (re-encrypts
+# secrets automatically). Does not add brand-new files — use `chezmoi add` once
+# for those.
+"$CHEZMOI" re-add >/dev/null 2>&1 || true
+
+"$CHEZMOI" git -- add -A
+if "$CHEZMOI" git -- diff --cached --quiet 2>/dev/null; then
+  echo "syncdot: nothing to sync."
+  exit 0
+fi
+
+msg="${*:-dotfiles sync}"
+"$CHEZMOI" git -- commit -q -m "$msg"
+if "$CHEZMOI" git -- push -q 2>/dev/null; then
+  echo "syncdot: pushed to GitHub ($msg)."
+else
+  echo "syncdot: committed locally but push failed (check network / gh auth)." >&2
+  exit 1
+fi
