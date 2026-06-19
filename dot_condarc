@@ -2,4 +2,3 @@ channels:
   - defaults
 
 auto_activate: false
-# hook-fire test
