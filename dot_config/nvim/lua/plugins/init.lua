@@ -35,6 +35,19 @@ return {
   {
     "nvim-tree/nvim-tree.lua",
     opts = function(_, opts)
+      -- WSL/DrvFs fix: nvim-tree's built-in file_exists() (utils.lua) compares
+      -- directory names case-SENSITIVELY against what scandir returns. On /mnt/c
+      -- the kernel reports the canonical Windows casing (e.g. "Users"), so a path
+      -- carried as lowercase "/mnt/c/users/..." is judged non-existent. create-file
+      -- then tries to mkdir an already-existing folder -> "Could not create folder
+      -- /mnt/c/users". DrvFs is case-insensitive, so fs_stat is the correct check.
+      local ok_utils, nt_utils = pcall(require, "nvim-tree.utils")
+      if ok_utils then
+        nt_utils.file_exists = function(path)
+          return vim.uv.fs_stat(path) ~= nil
+        end
+      end
+
       opts.git = vim.tbl_extend("force", opts.git or {}, {
         enable = true,
         show_on_dirs = true,
